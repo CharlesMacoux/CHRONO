@@ -493,6 +493,7 @@
   appId: "1:5928857132:web:dbfd907abea2800d07eb89" };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+  const timerRef = db.ref('timer');
 </script>
 
 <script>
@@ -1565,4 +1566,5 @@ window.addEventListener('beforeunload', ()=> { if (tickTimeoutId) clearTimeout(t
 </script>
 </body>
 </html>
+
 
