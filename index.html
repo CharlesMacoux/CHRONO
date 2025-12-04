@@ -482,19 +482,111 @@
 
   <!-- audio element; play once when triggered -->
   <audio id="alarmSound" src="music/mario.mp3" preload="auto"></audio>
+  
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
-  const firebaseConfig = {   apiKey: "AIzaSyDk8oxeIJibU6SsKdq8mg77YQkI9AFJCaY",
+/* -------------------------------------------------------------
+   VARIABLES LOCALES
+-------------------------------------------------------------- */
+let elapsed = 0;               // Temps en millisecondes
+let running = false;           // État du timer
+let localTimerRunning = false; // Est-ce que le timer tourne dans CE navigateur
+let interval = null;
+
+/* -------------------------------------------------------------
+   FONCTIONS DU TIMER LOCAL (mise à jour visuelle)
+-------------------------------------------------------------- */
+function formatTime(ms) {
+  let totalSeconds = Math.floor(ms / 1000);
+  let minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  let seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
+
+function startLocalTimer() {
+  if (localTimerRunning) return;
+  localTimerRunning = true;
+
+  interval = setInterval(() => {
+    elapsed += 1000;
+
+    // Mettre à jour l'affichage
+    document.getElementById("display").textContent = formatTime(elapsed);
+
+    // Mise à jour Firebase
+    timerRef.update({
+      elapsed: elapsed
+    });
+
+  }, 1000);
+}
+
+function stopLocalTimer() {
+  localTimerRunning = false;
+  clearInterval(interval);
+}
+
+/* -------------------------------------------------------------
+   CONFIGURATION FIREBASE
+-------------------------------------------------------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDk8oxeIJibu6Sskdq8mg77YQkI9AFJCaY",
   authDomain: "chrono-18baa.firebaseapp.com",
   projectId: "chrono-18baa",
-  storageBucket: "chrono-18baa.firebasestorage.app",
+  storageBucket: "chrono-18baa.appspot.com",
   messagingSenderId: "5928857132",
-  appId: "1:5928857132:web:dbfd907abea2800d07eb89" };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-  const timerRef = db.ref('timer');
+  appId: "1:5928857132:web:dbfd907abea2800d07eb89",
+  databaseURL: "https://chrono-18baa-default-rtdb.firebaseio.com/"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const timerRef = db.ref("timer");
+
+/* -------------------------------------------------------------
+   SYNCHRO TEMPS RÉEL : dès que Firebase change
+-------------------------------------------------------------- */
+timerRef.on("value", (snapshot) => {
+  const data = snapshot.val();
+
+  if (!data) return;
+
+  elapsed = data.elapsed;
+  running = data.running;
+
+  // Affichage
+  document.getElementById("display").textContent = formatTime(elapsed);
+
+  // Gestion du démarrage / arrêt
+  if (running && !localTimerRunning) {
+    startLocalTimer();
+  }
+  if (!running && localTimerRunning) {
+    stopLocalTimer();
+  }
+});
+
+/* -------------------------------------------------------------
+   BOUTON START
+-------------------------------------------------------------- */
+function startTimer() {
+  timerRef.update({
+    running: true
+  });
+}
+
+/* -------------------------------------------------------------
+   BOUTON STOP
+-------------------------------------------------------------- */
+function stopTimer() {
+  timerRef.update({
+    running: false
+  });
+}
 </script>
+
 
 <script>
 /* ====== CONFIG & STORAGE KEYS ====== */
@@ -1566,5 +1658,6 @@ window.addEventListener('beforeunload', ()=> { if (tickTimeoutId) clearTimeout(t
 </script>
 </body>
 </html>
+
 
 
